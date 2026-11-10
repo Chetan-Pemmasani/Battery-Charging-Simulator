@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import streamlit as st
 import pandas as pd
+import altair as alt
 
 from battery_model import BatteryParameters, constant_current, open_circuit_voltage, terminal_voltage
 from linear_systems import eigenvalues, polarization_poles, state_space_matrices
@@ -43,10 +44,32 @@ if run:
     with response_tab:
         left, right = st.columns(2)
         with left:
-            st.markdown("#### State of charge")
-            st.line_chart(
-                pd.DataFrame({"SOC (%)": frame["soc"] * 100}, index=frame["time_s"]),
-                alt="State of charge over time during charging.",
+            st.markdown("#### SOC trajectory and final state")
+            soc_chart = pd.DataFrame({
+                "Time (s)": frame["time_s"],
+                "SOC (%)": frame["soc"] * 100,
+            })
+            final_soc = float(result.soc[-1] * 100)
+            axis_top = max(110.0, final_soc * 1.05)
+            x_axis = alt.X("Time (s):Q", title="Time (s)")
+            y_axis = alt.Y("SOC (%):Q", title="State of charge (%)", scale=alt.Scale(domain=[0, axis_top]))
+            trajectory = alt.Chart(soc_chart).mark_line().encode(
+                x=x_axis,
+                y=y_axis,
+                tooltip=[alt.Tooltip("Time (s):Q", format=",.0f"), alt.Tooltip("SOC (%):Q", format=".2f")],
+            )
+            full_soc_line = alt.Chart(pd.DataFrame({"SOC (%)": [100.0]})).mark_rule(
+                color="#ff4b4b", strokeDash=[6, 4]
+            ).encode(y=y_axis)
+            final_marker = alt.Chart(pd.DataFrame({
+                "Time (s)": [float(result.time_s[-1])], "SOC (%)": [final_soc]
+            })).mark_point(size=100, filled=True).encode(
+                x=x_axis, y=y_axis,
+                tooltip=[alt.Tooltip("Time (s):Q", title="Final time", format=",.0f"), alt.Tooltip("SOC (%):Q", title="Final SOC", format=".2f")],
+            )
+            st.altair_chart(
+                (trajectory + full_soc_line + final_marker).properties(height=330),
+                alt="State of charge over time with the final state marked and a dashed 100 percent full-SOC reference.",
             )
         with right:
             st.markdown("#### Voltage response")
@@ -57,19 +80,6 @@ if run:
                     "Polarization voltage (V)": frame["polarization_voltage_v"],
                 }, index=frame["time_s"]),
                 alt="Terminal voltage, open-circuit voltage, and polarization voltage over time.",
-            )
-        with st.container(border=True):
-            st.markdown("#### SOC summary")
-            soc_summary = pd.DataFrame({
-                "Stage": ["Initial", "Final", "Full-SOC reference"],
-                "SOC (%)": [initial_soc * 100, result.soc[-1] * 100, 100.0],
-            })
-            st.bar_chart(
-                soc_summary,
-                x="Stage",
-                y="SOC (%)",
-                y_label="SOC (%)",
-                alt="Initial and final state of charge, compared with the 100 percent full-SOC reference.",
             )
 
     with analysis_tab:
@@ -103,6 +113,16 @@ if run:
             "Full charging model: marginal, not asymptotically stable. "
             "The zero SOC eigenvalue represents charge accumulation under continued input."
         )
-    st.download_button("Download CSV", frame.to_csv(index=False), "battery_simulation.csv", "text/csv")
+    st.subheader("Simulation data preview")
+    preview = frame.rename(columns={
+        "time_s": "Time (s)", "soc": "SOC", "polarization_voltage_v": "Polarization voltage (V)",
+        "current_a": "Current (A)", "ocv_v": "OCV (V)", "terminal_voltage_v": "Terminal voltage (V)",
+    }).round(6)
+    st.dataframe(
+        preview,
+        hide_index=True,
+        height=350,
+        alt="Numerical simulation results including time, state of charge, current, and voltages.",
+    )
 else:
     st.info("Choose parameters and select Run simulation.")

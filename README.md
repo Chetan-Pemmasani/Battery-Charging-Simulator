@@ -17,36 +17,49 @@ The standard command writes CSV outputs to `results/` and nine PNG figures to `r
 
 ## Mathematical model
 
-The states are SOC `z` and polarization voltage `v_p`, with a positive current convention for charging:
+The states are SOC $z$ and polarization voltage $v_p$, with a positive current convention for charging:
 
-\[
-\frac{dz}{dt}=\frac{I(t)}{3600Q},\qquad
-\frac{dv_p}{dt}=-\frac{v_p}{R_pC_p}+\frac{I(t)}{C_p}.
-\]
+$$
+\frac{dz}{dt} = \frac{I(t)}{3600Q},
+\qquad
+\frac{dv_p}{dt} = -\frac{v_p}{R_p C_p} + \frac{I(t)}{C_p}.
+$$
 
-\[
-V_{OC}=3.0+1.2z,\qquad V_t=V_{OC}+I R_0+v_p.
-\]
+$$
+V_{OC}(z) = 3.0 + 1.2z,
+\qquad
+V_t = V_{OC}(z) + I R_0 + v_p.
+$$
 
-For constant unconstrained current, the reference used for error analysis is
+For constant unconstrained current, the analytical reference is:
 
-\[
-z(t)=z_0+\frac{It}{3600Q},\qquad
-v_p(t)=IR_p+(v_p(0)-IR_p)e^{-t/(R_pC_p)}.
-\]
+$$
+z(t) = z_0 + \frac{It}{3600Q},
+\qquad
+v_p(t) = I R_p + \left(v_p(0) - I R_p\right)e^{-t/(R_pC_p)}.
+$$
 
-The state-space form is `x' = Ax + Bu`, where
+The state-space form is $x' = Ax + Bu$, where
 
-\[
-A=\begin{bmatrix}0&0\\0&-1/(R_pC_p)\end{bmatrix},\quad
-B=\begin{bmatrix}1/(3600Q)\\1/C_p\end{bmatrix}.
-\]
+$$
+A =
+\begin{bmatrix}
+0 & 0 \\
+0 & -\frac{1}{R_p C_p}
+\end{bmatrix},
+\qquad
+B =
+\begin{bmatrix}
+\frac{1}{3600Q} \\
+\frac{1}{C_p}
+\end{bmatrix}.
+$$
 
-The transfer function of the stable RC polarization branch is
+The transfer function of the stable RC polarization branch is:
 
-\[
-\frac{V_p(s)}{I(s)}=\frac{R_p}{R_pC_ps+1}.
-\]
+$$
+\frac{V_p(s)}{I(s)} = \frac{R_p}{R_p C_p s + 1}.
+$$
 
 ## Report parameters
 

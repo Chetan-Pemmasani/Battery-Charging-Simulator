@@ -151,3 +151,4 @@ python -m unittest discover -s tests -v
 - Explain why the exponential RC state is sensitive to the step size while SOC is exactly linear for constant current.
 - Distinguish stability of the RC branch from the charge-accumulating SOC integrator.
 - State that the analytical result validates the numerical algorithm only for constant current without a cutoff.
+# Battery-Charging-Simulator

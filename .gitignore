@@ -1,0 +1,9 @@
+# SSH keys created locally for GitHub authentication. Never commit private keys.
+key
+key.pub
+
+# Local Python and Streamlit artifacts
+__pycache__/
+*.py[cod]
+.venv/
+work/

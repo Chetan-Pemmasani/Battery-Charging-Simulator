@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 
 from battery_model import BatteryParameters, constant_current, open_circuit_voltage, terminal_voltage
-from linear_systems import stability_summary
+from linear_systems import eigenvalues, polarization_poles, state_space_matrices
 from numerical_methods import integrate
 
 st.set_page_config(page_title="Battery Charging Simulation", layout="wide")
@@ -39,9 +39,70 @@ if run:
     one.metric("Final SOC", f"{result.soc[-1] * 100:.2f}%")
     two.metric("Final terminal voltage", f"{frame['terminal_voltage_v'].iloc[-1]:.4f} V")
     three.metric("RC time constant", f"{params.time_constant_s:.1f} s")
-    st.line_chart(frame, x="time_s", y=["soc", "polarization_voltage_v", "terminal_voltage_v"])
-    st.subheader("State-space analysis")
-    st.json(stability_summary(params), expanded=False)
+    response_tab, analysis_tab = st.tabs(["Simulation response", "State-space analysis"])
+    with response_tab:
+        left, right = st.columns(2)
+        with left:
+            st.markdown("#### State of charge")
+            st.line_chart(
+                pd.DataFrame({"SOC (%)": frame["soc"] * 100}, index=frame["time_s"]),
+                alt="State of charge over time during charging.",
+            )
+        with right:
+            st.markdown("#### Voltage response")
+            st.line_chart(
+                pd.DataFrame({
+                    "Terminal voltage (V)": frame["terminal_voltage_v"],
+                    "OCV (V)": frame["ocv_v"],
+                    "Polarization voltage (V)": frame["polarization_voltage_v"],
+                }, index=frame["time_s"]),
+                alt="Terminal voltage, open-circuit voltage, and polarization voltage over time.",
+            )
+        with st.container(border=True):
+            st.markdown("#### SOC summary")
+            soc_summary = pd.DataFrame({
+                "Stage": ["Initial", "Final", "Full-SOC reference"],
+                "SOC (%)": [initial_soc * 100, result.soc[-1] * 100, 100.0],
+            })
+            st.bar_chart(
+                soc_summary,
+                x="Stage",
+                y="SOC (%)",
+                y_label="SOC (%)",
+                alt="Initial and final state of charge, compared with the 100 percent full-SOC reference.",
+            )
+
+    with analysis_tab:
+        st.subheader("State-space analysis")
+        st.caption("State vector: x = [z, v_p]^T; input u = charging current I(t).")
+        a_matrix, b_matrix = state_space_matrices(params)
+        eig = eigenvalues(params)
+        pole = polarization_poles(params)[0]
+
+        matrix_col, input_col = st.columns(2)
+        with matrix_col:
+            st.markdown("**System matrix A**")
+            st.latex(
+                rf"A = \begin{{bmatrix}} 0 & 0 \\ 0 & -\frac{{1}}{{R_p C_p}} \end{{bmatrix}}"
+                rf"= \begin{{bmatrix}} 0 & 0 \\ 0 & {a_matrix[1, 1]:.6f} \end{{bmatrix}}\;s^{{-1}}"
+            )
+        with input_col:
+            st.markdown("**Input matrix B**")
+            st.latex(
+                rf"B = \begin{{bmatrix}} \frac{{1}}{{3600Q}} \\ \frac{{1}}{{C_p}} \end{{bmatrix}}"
+                rf"= \begin{{bmatrix}} {b_matrix[0, 0]:.8f} \\ {b_matrix[1, 0]:.8f} \end{{bmatrix}}"
+            )
+
+        first, second, third = st.columns(3)
+        first.metric("SOC eigenvalue", f"{eig[0]:.6f}")
+        second.metric("RC eigenvalue / pole", f"{pole:.6f} s⁻¹")
+        third.metric("RC time constant", f"{params.time_constant_s:.2f} s")
+
+        st.success("RC polarization subsystem: asymptotically stable (its pole is negative).")
+        st.warning(
+            "Full charging model: marginal, not asymptotically stable. "
+            "The zero SOC eigenvalue represents charge accumulation under continued input."
+        )
     st.download_button("Download CSV", frame.to_csv(index=False), "battery_simulation.csv", "text/csv")
 else:
     st.info("Choose parameters and select Run simulation.")

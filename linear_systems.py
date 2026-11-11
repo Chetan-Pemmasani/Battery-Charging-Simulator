@@ -11,6 +11,30 @@ def state_space_matrices(params: BatteryParameters) -> tuple[np.ndarray, np.ndar
     return a, b
 
 
+def output_matrices(params: BatteryParameters) -> tuple[np.ndarray, np.ndarray]:
+    """Output matrices for the voltage perturbation ``Vt - 3 = Cx + DI``."""
+    return np.array([[1.2, 1.0]]), np.array([[params.r0_ohm]])
+
+
+def controllability_matrix(params: BatteryParameters) -> np.ndarray:
+    a, b = state_space_matrices(params)
+    return np.column_stack((b, a @ b))
+
+
+def observability_matrix(params: BatteryParameters) -> np.ndarray:
+    a, _ = state_space_matrices(params)
+    c, _ = output_matrices(params)
+    return np.vstack((c, c @ a))
+
+
+def controllability_rank(params: BatteryParameters) -> int:
+    return int(np.linalg.matrix_rank(controllability_matrix(params)))
+
+
+def observability_rank(params: BatteryParameters) -> int:
+    return int(np.linalg.matrix_rank(observability_matrix(params)))
+
+
 def eigenvalues(params: BatteryParameters) -> np.ndarray:
     return np.linalg.eigvals(state_space_matrices(params)[0])
 
@@ -24,6 +48,35 @@ def transfer_function_coefficients(params: BatteryParameters) -> tuple[np.ndarra
     return np.array([params.rp_ohm]), np.array([params.time_constant_s, 1.0])
 
 
+def terminal_transfer_function_coefficients(params: BatteryParameters) -> tuple[np.ndarray, np.ndarray]:
+    """Coefficients for ``G(s)=Vt(s)/I(s)`` including SOC, RC and R0 terms."""
+    tau = params.time_constant_s
+    soc_gain = 1.2 / (3600.0 * params.capacity_ah)
+    numerator = np.array([
+        params.r0_ohm * tau,
+        soc_gain * tau + params.rp_ohm + params.r0_ohm,
+        soc_gain,
+    ])
+    denominator = np.array([tau, 1.0, 0.0])
+    return numerator, denominator
+
+
+def terminal_zeros(params: BatteryParameters) -> np.ndarray:
+    numerator, _ = terminal_transfer_function_coefficients(params)
+    return np.roots(numerator)
+
+
+def terminal_frequency_response(omega_rad_s: np.ndarray, params: BatteryParameters) -> np.ndarray:
+    """Frequency response of full terminal-voltage transfer function."""
+    omega = np.asarray(omega_rad_s, dtype=float)
+    s = 1j * omega
+    return (
+        1.2 / (3600.0 * params.capacity_ah * s)
+        + params.rp_ohm / (params.time_constant_s * s + 1.0)
+        + params.r0_ohm
+    )
+
+
 def is_asymptotically_stable(params: BatteryParameters) -> bool:
     """The complete model has an SOC integrator; only its RC subsystem is asymptotically stable."""
     return bool(np.all(np.real(polarization_poles(params)) < 0))
@@ -35,6 +88,8 @@ def stability_summary(params: BatteryParameters) -> dict[str, object]:
         "state_eigenvalues": eig,
         "polarization_poles": polarization_poles(params),
         "polarization_asymptotically_stable": is_asymptotically_stable(params),
+        "controllability_rank": controllability_rank(params),
+        "observability_rank": observability_rank(params),
         "full_model_note": "The SOC eigenvalue is zero (charge accumulation), so the full two-state charging model is marginal, not asymptotically stable.",
     }
 

@@ -73,7 +73,7 @@ $$
 | RC time constant `R_pC_p` | 40 s |
 | Duration / main step | 7200 s / 10 s |
 
-The default simulation deliberately preserves the report's *unconstrained* two-hour 1 A experiment: SOC rises from 20% to **120%**. This is mathematically consistent with the supplied equation but not physically admissible. Experiment 7 separately activates a full-SOC cutoff: positive charging current is zero after SOC reaches 100%.
+The project retains an optional *unconstrained* two-hour 1 A experiment: SOC rises from 20% to **120%**. This is mathematically consistent with the supplied equation but not physically admissible. The interactive app defaults to a full-SOC cutoff: positive charging current becomes zero after SOC reaches 100%. Use the unconstrained mode only to demonstrate the limitation of a constant-current model.
 
 ## Project structure
 
@@ -116,8 +116,8 @@ Compute OCV and terminal voltage
 ## Experiments and interpretation
 
 1. **Constant-current charging:** plots SOC, `v_p`, OCV, and terminal voltage for the original 1 A report case.
-2. **Method comparison:** uses the same initial state and 10 s grid for Euler, Heun, and RK4. Errors are calculated from the exact constant-current solution.
-3. **Convergence:** repeats the calculation at `h = 10, 5, 2, 1` s and estimates `p = log(E_h/E_{h/2}) / log(h/(h/2))` only for adjacent available grids. Euler, Heun, and RK4 have theoretical global orders 1, 2, and 4. RK4 may reach floating-point precision at very small steps, so its observed order can become less informative.
+2. **Method comparison:** uses the same initial state and grid for Euler, Heun's explicit-trapezoidal RK2 method, and RK4. Errors are calculated from the exact constant-current solution.
+3. **Convergence:** uses `h = 20, 10, 5, 2, 1, 0.5` s and fits the log-log slope. Euler, Heun, and RK4 have theoretical global orders 1, 2, and 4.
 4. **Current variation:** compares 0.5, 1, and 2 A. Higher current raises SOC faster and produces a higher steady `v_p = IR_p` and IR0 voltage contribution.
 5. **Polarization transient:** validates the exponential approach of `v_p` to `IR_p`; after one time constant (40 s), the transient has completed about 63.2% of its change.
 6. **Linear system:** plots the negative RC pole and its step response. The **polarization subsystem** is asymptotically stable because its pole is `-1/40 s⁻¹`. The complete state model has a zero SOC eigenvalue because charge accumulates; it is not asymptotically stable under continuing input. This distinction is important in a viva.
@@ -140,7 +140,7 @@ Compute OCV and terminal voltage
 
 ## Advanced extension
 
-`app.py` offers parameter controls, solver selection, a physical-cutoff toggle, plots, state-space summary, and a downloadable CSV. A defensible next model extension is CC-CV charging: use constant current until a voltage limit, then solve for a decreasing current that holds terminal voltage. It should be documented as an extension rather than substituted silently for the report's constant-current model.
+`app.py` offers presets, current-profile selection, solver controls, a physical-cutoff toggle, persistent results, numerical-analysis tabs, state-space analysis, and an in-app data preview. A defensible next model extension is CC-CV charging: use constant current until a voltage limit, then solve for a decreasing current that holds terminal voltage. It should be documented as an extension rather than substituted silently for the report's constant-current model.
 
 ## Testing and troubleshooting
 
@@ -155,7 +155,7 @@ python -m unittest discover -s tests -v
 | `ModuleNotFoundError` | Run `python -m pip install -r requirements.txt` in the same environment. |
 | No figures appear | Run `python main.py`; files are intentionally saved, not shown interactively. |
 | Streamlit unavailable | Install dependencies, then run `streamlit run app.py`. |
-| SOC is 120% | This is expected in the report-reproduction mode. Select physical cutoff in the app or pass `physical_cutoff=True` when using `integrate`. |
+| SOC is above 100% | The optional unconstrained demonstration mode is active. Select physical cutoff in the app or pass `physical_cutoff=True` when using `integrate`. |
 | Different error values | Confirm the same parameters, duration, method, and time step; errors are generated fresh on every run. |
 
 ## Viva checklist

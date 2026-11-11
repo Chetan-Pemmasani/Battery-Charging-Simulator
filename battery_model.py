@@ -60,6 +60,22 @@ def pulse_current(amplitude_a: float = 1.0, period_s: float = 1200.0) -> Current
     return lambda t, _x: amplitude_a if (t % period_s) < period_s / 2 else 0.0
 
 
+def step_current(initial_a: float = 0.0, final_a: float = 1.0,
+                 step_time_s: float = 600.0) -> CurrentProfile:
+    """Current that changes once at ``step_time_s``."""
+    if step_time_s < 0:
+        raise ValueError("step_time_s must be non-negative.")
+    return lambda t, _x: initial_a if t < step_time_s else final_a
+
+
+def ramp_current(initial_a: float = 0.0, final_a: float = 1.0,
+                 ramp_time_s: float = 1800.0) -> CurrentProfile:
+    """Linearly ramp current, then hold it at ``final_a``."""
+    if ramp_time_s <= 0:
+        raise ValueError("ramp_time_s must be positive.")
+    return lambda t, _x: initial_a + (final_a - initial_a) * min(max(t, 0.0) / ramp_time_s, 1.0)
+
+
 def charging_current(profile: CurrentProfile, t: float, state: Array, physical_cutoff: bool) -> float:
     """Evaluate a profile, optionally stopping charge when the cell is full."""
     value = float(profile(t, state))

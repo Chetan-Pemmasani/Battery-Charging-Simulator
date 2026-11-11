@@ -1,0 +1,36 @@
+[theme]
+# A focused dark dashboard theme for the simulation interface.
+base = "dark"
+primaryColor = "#1D4ED8"
+backgroundColor = "#0B1220"
+secondaryBackgroundColor = "#172033"
+textColor = "#E8EEF8"
+borderColor = "#2A3953"
+font = "sans-serif"
+headingFont = "sans-serif"
+codeFont = "monospace"
+baseRadius = "medium"
+buttonRadius = "medium"
+metricValueFontSize = "2.25rem"
+metricValueFontWeight = 700
+paddingTop = "1.25rem"
+paddingBottom = "2.5rem"
+showWidgetBorder = true
+showSidebarBorder = true
+linkColor = "#93C5FD"
+dataframeHeaderBackgroundColor = "#1E2C44"
+dataframeHeaderTextColor = "#E8EEF8"
+dataframeBorderColor = "#2A3953"
+chartCategoricalColors = ["#60A5FA", "#F59E0B", "#C084FC", "#F472B6", "#22D3EE", "#FB923C", "#94A3B8"]
+
+[theme.sidebar]
+backgroundColor = "#101827"
+secondaryBackgroundColor = "#182337"
+textColor = "#E8EEF8"
+borderColor = "#2A3953"
+primaryColor = "#1D4ED8"
+linkColor = "#93C5FD"
+codeBackgroundColor = "#182337"
+codeTextColor = "#E8EEF8"
+paddingTop = "1rem"
+paddingBottom = "1.5rem"
